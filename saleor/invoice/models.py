@@ -5,14 +5,13 @@ from django.db.models import JSONField  # type: ignore
 from django.utils.timezone import now
 
 from ..core import JobStatus
-from ..core.models import Job, ModelWithMetadata
+from ..core.models import CustomQueryset, Job, ModelWithMetadata
 from ..core.utils import build_absolute_uri
 from ..core.utils.json_serializer import CustomJsonEncoder
 from ..order.models import Order
 from . import InvoiceEvents
-from django_multitenant.models import TenantManager
 
-class InvoiceQueryset(TenantManager):
+class InvoiceQueryset(CustomQueryset):
     def ready(self):
         return self.filter(job__status=JobStatus.SUCCESS)
 
@@ -33,7 +32,7 @@ class Invoice(ModelWithMetadata, Job):
     created = models.DateTimeField(null=True)
     external_url = models.URLField(null=True, max_length=2048)
     invoice_file = models.FileField(upload_to="invoices")
-    objects = InvoiceQueryset()
+    objects = InvoiceQueryset.as_manager()
 
     @property
     def url(self):

@@ -8,13 +8,12 @@ from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 
 from ..account.models import Address
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..order.models import OrderLine
 from ..product.models import Product, ProductVariant
 from ..shipping.models import ShippingZone
-from django_multitenant.models import TenantManager
 
-class WarehouseQueryset(TenantManager):
+class WarehouseQueryset(CustomQueryset):
     def prefetch_data(self):
         return self.select_related("address").prefetch_related("shipping_zones")
 
@@ -45,7 +44,7 @@ class Warehouse(ModelWithMetadata):
     address = models.ForeignKey(Address, on_delete=models.PROTECT)
     email = models.EmailField(blank=True, default="")
 
-    objects = WarehouseQueryset()
+    objects = WarehouseQueryset.as_manager()
 
     class Meta(ModelWithMetadata.Meta):
         ordering = ("-slug",)

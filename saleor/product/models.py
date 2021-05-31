@@ -37,7 +37,7 @@ from versatileimagefield.fields import PPOIField, VersatileImageField
 from ..account.utils import requestor_is_staff_member_or_app
 from ..channel.models import Channel
 from ..core.db.fields import SanitizedJSONField
-from ..core.models import ModelWithMetadata, PublishableModel, SortableModel
+from ..core.models import CustomQueryset, ModelWithMetadata, PublishableModel, SortableModel
 from ..core.permissions import ProductPermissions, ProductTypePermissions
 from ..core.utils import build_absolute_uri
 from ..core.utils.draftjs import json_content_to_raw_text
@@ -49,7 +49,6 @@ from ..discount.utils import calculate_discounted_price
 from ..seo.models import SeoModel, SeoModelTranslation
 from ..store.models import Store
 from . import ProductMediaTypes
-from django_multitenant.models import TenantManager
 
 if TYPE_CHECKING:
     # flake8: noqa
@@ -153,7 +152,7 @@ class ProductType(ModelWithMetadata):
         )
 
 
-class ProductsQueryset(TenantManager):
+class ProductsQueryset(CustomQueryset):
     def published(self, channel_slug: str):
         today = datetime.date.today()
         return self.filter(
@@ -358,7 +357,7 @@ class Product(SeoModel, ModelWithMetadata):
     )
     rating = models.FloatField(null=True, blank=True)
 
-    objects = ProductsQueryset()
+    objects = ProductsQueryset.as_manager()
     translated = TranslationProxy()
 
     class Meta:

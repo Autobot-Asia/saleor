@@ -5,12 +5,11 @@ from django.db import models
 from django.db.models import F, Q
 
 from ...account.utils import requestor_is_staff_member_or_app
-from ...core.models import ModelWithMetadata, SortableModel
+from ...core.models import CustomQueryset, ModelWithMetadata, SortableModel
 from ...core.utils.translations import TranslationProxy
 from ...page.models import PageType
 from ...product.models import ProductType
 from .. import AttributeEntityType, AttributeInputType, AttributeType
-from django_multitenant.models import TenantManager
 
 if TYPE_CHECKING:
     from django.db.models import OrderBy
@@ -43,7 +42,7 @@ class SimpleBaseAttributeQuerySet(models.QuerySet):
             return self.all()
         return self.get_public_attributes()
 
-class BaseAttributeQuerySet(TenantManager):
+class BaseAttributeQuerySet(CustomQueryset):
     def get_public_attributes(self):
         raise NotImplementedError
 
@@ -163,7 +162,7 @@ class Attribute(ModelWithMetadata):
     storefront_search_position = models.IntegerField(default=0, blank=True)
     available_in_grid = models.BooleanField(default=False, blank=True)
 
-    objects = AttributeQuerySet()
+    objects = AttributeQuerySet.as_manager()
     translated = TranslationProxy()
 
     class Meta(ModelWithMetadata.Meta):

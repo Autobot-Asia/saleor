@@ -11,7 +11,7 @@ from measurement.measures import Weight
 from prices import Money
 
 from ..channel.models import Channel
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..core.permissions import ShippingPermissions
 from ..core.utils.translations import TranslationProxy
 from ..core.weight import (
@@ -22,7 +22,7 @@ from ..core.weight import (
 )
 from . import PostalCodeRuleInclusionType, ShippingMethodType
 from .postal_codes import filter_shipping_methods_by_postal_code_rules
-from django_multitenant.models import TenantManager
+
 if TYPE_CHECKING:
     # flake8: noqa
     from ..checkout.models import Checkout
@@ -99,7 +99,7 @@ class ShippingZone(ModelWithMetadata):
         )
 
 
-class ShippingMethodQueryset(TenantManager):
+class ShippingMethodQueryset(CustomQueryset):
     def price_based(self):
         return self.filter(type=ShippingMethodType.PRICE_BASED)
 
@@ -211,7 +211,7 @@ class ShippingMethod(ModelWithMetadata):
     maximum_delivery_days = models.PositiveIntegerField(null=True, blank=True)
     minimum_delivery_days = models.PositiveIntegerField(null=True, blank=True)
 
-    objects = ShippingMethodQueryset()
+    objects = ShippingMethodQueryset.as_manager()
     translated = TranslationProxy()
 
     class Meta(ModelWithMetadata.Meta):

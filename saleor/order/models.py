@@ -18,7 +18,7 @@ from prices import Money, TaxedMoney
 
 from ..account.models import Address
 from ..channel.models import Channel
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..core.permissions import OrderPermissions
 from ..core.taxes import zero_money, zero_taxed_money
 from ..core.utils.json_serializer import CustomJsonEncoder
@@ -29,10 +29,9 @@ from ..giftcard.models import GiftCard
 from ..payment import ChargeStatus, TransactionKind
 from ..shipping.models import ShippingMethod
 from . import FulfillmentStatus, OrderEvents, OrderStatus
-from django_multitenant.models import TenantManager
 
 
-class OrderQueryset(TenantManager):
+class OrderQueryset(CustomQueryset):
     def get_by_checkout_token(self, token):
         """Return non-draft order with matched checkout token."""
         return self.confirmed().filter(checkout_token=token).first()
@@ -216,7 +215,7 @@ class Order(ModelWithMetadata):
         measurement=Weight, unit_choices=WeightUnits.CHOICES, default=zero_weight
     )
     redirect_url = models.URLField(blank=True, null=True)
-    objects = OrderQueryset()
+    objects = OrderQueryset.as_manager()
 
     class Meta(ModelWithMetadata.Meta):
         ordering = ("-pk",)
@@ -386,7 +385,7 @@ class Order(ModelWithMetadata):
         return self.weight
 
 
-class OrderLineQueryset(TenantManager):
+class OrderLineQueryset(CustomQueryset):
     def digital(self):
         """Return lines with digital products."""
         for line in self.all():
@@ -498,7 +497,7 @@ class OrderLine(models.Model):
         max_digits=5, decimal_places=4, default=Decimal("0.0")
     )
 
-    objects = OrderLineQueryset()
+    objects = OrderLineQueryset.as_manager()
 
     class Meta:
         ordering = ("pk",)
