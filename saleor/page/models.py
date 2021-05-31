@@ -10,7 +10,7 @@ from versatileimagefield.fields import PPOIField, VersatileImageField
 from ..product import ProductMediaTypes
 from ..store.models import Store
 
-class Page(ModelWithMetadata, SeoModel, PublishableModel):
+class Page(SeoModel, PublishableModel, ModelWithMetadata):
     tenant_id='store_id'
     slug = models.SlugField(unique=True, max_length=255)
     title = models.CharField(max_length=250)

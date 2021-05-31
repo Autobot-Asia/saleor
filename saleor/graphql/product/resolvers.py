@@ -66,10 +66,6 @@ def resolve_product_by_slug(info, product_slug, channel_slug, requestor):
 def resolve_products(
     info, requestor, stock_availability=None, channel_slug=None, **_kwargs
 ) -> ChannelQsContext:
-    # s = store_models.Store.objects.all()[0]
-    # print('-----', s)
-    s = get_current_tenant()
-    print('sssssssss', s)
     qs = models.Product.objects.visible_to_user(requestor, channel_slug)
     if stock_availability:
         qs = filter_products_by_stock_availability(qs, stock_availability)
