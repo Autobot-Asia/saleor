@@ -1627,18 +1627,18 @@ class ProductSendMessage(BaseMutation):
         input = data.get("input")
         instance = cls.get_node_or_error(info, node_id, only_type=Product)
         _type, _id = graphene.Node.from_global_id(input["store_id"])
-        user = User.objects.get(store_id=_id)
-
-        data = {
-            "requestor" : "",
-            "quantity": input["quantity"],
-            "message": input["message"],
-            "recipent": user.email
-        }
-
-        if(info.context.user):
-            data["requestor"] = info.context.user.first_name + " " + info.context.user.last_name
-        else:
-            data["requestor"] = "Anonymous"
-        emails.product_send_message(data, instance)
+        if _id:
+            user = User.objects.get(store_id=_id)
+            data = {
+                "requestor" : "",
+                "quantity": input["quantity"],
+                "message": input["message"],
+                "recipent": user.email
+            }
+            if(info.context.user and (hasattr(info.context.user, 'first_name') or hasattr(info.context.user, 'last_name'))):
+                data["requestor"] = info.context.user.first_name + " " + info.context.user.last_name
+            else:
+                data["requestor"] = "Anonymous"
+            emails.product_send_message(data, instance)
+        
         return ProductSendMessage(instance)

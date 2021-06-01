@@ -139,7 +139,7 @@ if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
         SENDGRID_PASSWORD,
     )
 email_config = dj_email_url.parse(
-    EMAIL_URL or "console://demo@example.com:console@example/"
+    EMAIL_URL or "smtp://tuan94cntt@gmail.com:tuanvu123@smtp.gmail.com:587/"
 )
 
 EMAIL_FILE_PATH = email_config["EMAIL_FILE_PATH"]
@@ -148,7 +148,7 @@ EMAIL_HOST_PASSWORD = email_config["EMAIL_HOST_PASSWORD"]
 EMAIL_HOST = email_config["EMAIL_HOST"]
 EMAIL_PORT = email_config["EMAIL_PORT"]
 EMAIL_BACKEND = email_config["EMAIL_BACKEND"]
-EMAIL_USE_TLS = email_config["EMAIL_USE_TLS"]
+EMAIL_USE_TLS = True
 EMAIL_USE_SSL = email_config["EMAIL_USE_SSL"]
 
 # If enabled, make sure you have set proper storefront address in ALLOWED_CLIENT_HOSTS.

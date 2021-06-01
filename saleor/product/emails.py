@@ -13,7 +13,6 @@ def collect_data_for_send_message(data, product, template):
     email_context["name"] = product.name
     email_context["quantity"] = data["quantity"]
     email_context["message"] = data["message"]
-
     return {
         "recipient_list": [data["recipent"]],
         "template_name": template,
@@ -24,5 +23,5 @@ def collect_data_for_send_message(data, product, template):
 
 @app.task
 def product_send_message(data, product):
-    email_data = collect_data_for_send_message(data, product, "order/product_send_message")
+    email_data = collect_data_for_send_message(data, product, "product/product_send_message")
     send_templated_mail(**email_data)
