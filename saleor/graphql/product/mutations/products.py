@@ -1,5 +1,7 @@
 import datetime
 from collections import defaultdict
+from saleor.account.models import User
+from saleor.store.models import Store
 from typing import List, Tuple
 
 import graphene
@@ -16,7 +18,7 @@ from ....core.utils.editorjs import clean_editor_js
 from ....core.utils.validators import get_oembed_data
 from ....order import OrderStatus
 from ....order import models as order_models
-from ....product import ProductMediaTypes, models
+from ....product import ProductMediaTypes, models, emails
 from ....product.error_codes import CollectionErrorCode, ProductErrorCode
 from ....product.tasks import (
     update_product_discounted_price_task,
@@ -59,7 +61,6 @@ from ..utils import (
     get_used_attribute_values_for_variant,
     get_used_variants_attribute_values,
 )
-
 
 class CategoryInput(graphene.InputObjectType):
     description = graphene.JSONString(description="Category description (JSON).")
@@ -1603,3 +1604,41 @@ class VariantMediaUnassign(BaseMutation):
             lambda: info.context.plugins.product_variant_updated(variant.node)
         )
         return VariantMediaUnassign(product_variant=variant, media=media)
+
+class SendMessageInput(graphene.InputObjectType):
+    message = graphene.String(description="Message.")
+    quantity = graphene.Int(description="Quantity.")
+    store_id = graphene.ID(description="Store.")
+class ProductSendMessage(BaseMutation):
+    class Arguments:
+        id = graphene.ID(required=True, description="ID of a product to send message.")
+        input = SendMessageInput(
+            required=True, description="Fields required to send message."
+        )
+
+    class Meta:
+        description = "Send message to supllier."
+        error_type_class = ProductError
+        error_type_field = "product_errors"
+
+    @classmethod
+    def perform_mutation(cls, _root, info, **data):
+        node_id = data.get("id")
+        input = data.get("input")
+        instance = cls.get_node_or_error(info, node_id, only_type=Product)
+        _type, _id = graphene.Node.from_global_id(input["store_id"])
+        user = User.objects.get(store_id=_id)
+
+        data = {
+            "requestor" : "",
+            "quantity": input["quantity"],
+            "message": input["message"],
+            "recipent": user.email
+        }
+
+        if(info.context.user):
+            data["requestor"] = info.context.user.first_name + " " + info.context.user.last_name
+        else:
+            data["requestor"] = "Anonymous"
+        emails.product_send_message(data, instance)
+        return ProductSendMessage(instance)
