@@ -13,7 +13,7 @@ from ..app.models import App
 from ..core.exceptions import ReadOnlyException
 from ..core.tracing import should_trace
 from .views import API_PATH, GraphQLView
-from django_multitenant.utils import set_current_tenant
+from django_multitenant.utils import set_current_tenant, unset_current_tenant
 from ..store.models import Store
 
 def get_user(request):
@@ -30,10 +30,12 @@ class JWTMiddleware:
             return get_user(request) or AnonymousUser()
 
         request.user = SimpleLazyObject(lambda: user())
-
-        if hasattr(request, 'user') and hasattr(request.user, 'store_id'):
+        if hasattr(request, 'user') and hasattr(request.user, 'store_id') and request.user.store_id:
             s_store = Store.objects.get(pk=request.user.store_id)
             set_current_tenant(s_store)
+        else:
+            unset_current_tenant()
+
         return next(root, info, **kwargs)
 
 

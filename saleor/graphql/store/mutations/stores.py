@@ -89,7 +89,8 @@ class StoreCreate(ModelMutation):
         data["input"]["store_type_id"] = store_type_id
         retval = super().perform_mutation(root, info, **data)
         user = info.context.user
-        user.store_id = retval.store.id
+        if not user.is_superuser:
+            user.store_id = retval.store.id
         if user.is_authenticated:
             user.save()
             

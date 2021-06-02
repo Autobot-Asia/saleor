@@ -10,7 +10,7 @@ from ..account.validators import validate_possible_number
 from mptt.managers import TreeManager
 from ..core.utils.editorjs import clean_editor_js
 from ..core.db.fields import SanitizedJSONField
-from ..core.models import ModelWithMetadata, SortableModel, SimpleModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata, SortableModel, SimpleModelWithMetadata
 from ..seo.models import SeoModel, SeoModelTranslation
 from django.utils import timezone
 from typing import TYPE_CHECKING, Union
@@ -62,7 +62,7 @@ class StoreTypeTranslation(SeoModelTranslation):
             self.name,
         )
 
-class StoresQueryset(models.QuerySet):
+class StoresQueryset(CustomQueryset):
     def visible_to_user(self, requestor: Union["User", "App"]):
         try:
             if requestor.is_superuser:
