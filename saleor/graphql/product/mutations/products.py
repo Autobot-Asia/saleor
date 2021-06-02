@@ -1607,9 +1607,12 @@ class VariantMediaUnassign(BaseMutation):
 
 class SendMessageInput(graphene.InputObjectType):
     message = graphene.String(description="Message.")
+    quantity_type = graphene.String(description="Quantity.")
     quantity = graphene.Int(description="Quantity.")
+    is_anonymous = graphene.Boolean(description="Check box anonymous.")
     store_id = graphene.ID(description="Store.")
 class ProductSendMessage(BaseMutation):
+    product = graphene.Field(Product)
     class Arguments:
         id = graphene.ID(required=True, description="ID of a product to send message.")
         input = SendMessageInput(
@@ -1625,20 +1628,24 @@ class ProductSendMessage(BaseMutation):
     def perform_mutation(cls, _root, info, **data):
         node_id = data.get("id")
         input = data.get("input")
-        instance = cls.get_node_or_error(info, node_id, only_type=Product)
+        instance = cls.get_node_or_error(info, node_id, field="product", only_type=Product)
         _type, _id = graphene.Node.from_global_id(input["store_id"])
         if _id:
             user = User.objects.get(store_id=_id)
             data = {
                 "requestor" : "",
                 "quantity": input["quantity"],
+                "quantity_type": input["quantity_type"],
                 "message": input["message"],
                 "recipent": user.email
             }
-            if(info.context.user and (hasattr(info.context.user, 'first_name') or hasattr(info.context.user, 'last_name'))):
-                data["requestor"] = info.context.user.first_name + " " + info.context.user.last_name
-            else:
+            if not input["is_anonymous"]:
                 data["requestor"] = "Anonymous"
+            else:
+                if(info.context.user and (hasattr(info.context.user, 'first_name') or hasattr(info.context.user, 'last_name'))):
+                    data["requestor"] = info.context.user.first_name + " " + info.context.user.last_name
+                else:
+                    data["requestor"] = "Anonymous"
             emails.product_send_message(data, instance)
-        
-        return ProductSendMessage(instance)
+        product = ChannelContext(node=instance, channel_slug=None)
+        return ProductSendMessage(product=product)

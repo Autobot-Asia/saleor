@@ -12,6 +12,7 @@ def collect_data_for_send_message(data, product, template):
     email_context["requestor"] = data["requestor"]
     email_context["name"] = product.name
     email_context["quantity"] = data["quantity"]
+    email_context["quantity_type"] = data["quantity_type"]
     email_context["message"] = data["message"]
     return {
         "recipient_list": [data["recipent"]],

@@ -9,7 +9,7 @@
 
 Requestor: {{ requestor }}
 Product: {{ name }}
-Quantity: {{ quantity }}
+Quantity: {{ quantity }} {{ quantity_type }}
 Message: {{ message }}
 
 {% include 'templated_email/shared/_footer.email' %}

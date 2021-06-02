@@ -139,7 +139,7 @@ if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
         SENDGRID_PASSWORD,
     )
 email_config = dj_email_url.parse(
-    EMAIL_URL or "smtp://tuan94cntt@gmail.com:tuanvu123@smtp.gmail.com:587/"
+    EMAIL_URL or "smtp://thiennccsoft@gmail.com:gwnvhbhlcmmymmwr@smtp.gmail.com:587/"
 )
 
 EMAIL_FILE_PATH = email_config["EMAIL_FILE_PATH"]
