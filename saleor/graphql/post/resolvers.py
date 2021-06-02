@@ -8,12 +8,8 @@ from .types import Post
 def resolve_post(info, global_page_id=None, slug=None):
     validate_one_of_args_is_in_query("id", global_page_id, "slug", slug)
     user = info.context.user
-
-    if slug is not None:
-        post = models.Post.objects.visible_to_user(user).filter(slug=slug).first()
-    else:
-        _type, post_pk = graphene.Node.from_global_id(global_page_id)
-        post = models.Post.objects.visible_to_user(user).filter(pk=post_pk).first()
+    _type, post_pk = graphene.Node.from_global_id(global_page_id)
+    post = models.Post.objects.get(pk=post_pk)
     return post
 
 
