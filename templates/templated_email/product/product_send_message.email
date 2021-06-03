@@ -1,0 +1,17 @@
+{% load i18n %}
+
+{% block subject %}
+  {{ site_name }}: Quota Request - {{name}}
+{% endblock %}
+
+{% block plain %}
+{% include 'templated_email/shared/_header.email' %}
+
+Requestor: {{ requestor }}
+Product: {{ name }}
+Quantity: {{ quantity }} {{ quantity_type }}
+Message: {{ message }}
+
+{% include 'templated_email/shared/_footer.email' %}
+{% endblock %}
+
