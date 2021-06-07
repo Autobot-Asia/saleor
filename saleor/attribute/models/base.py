@@ -1,10 +1,11 @@
+from saleor.store.models import Store
 from typing import TYPE_CHECKING, Union
 
 from django.db import models
 from django.db.models import F, Q
 
 from ...account.utils import requestor_is_staff_member_or_app
-from ...core.models import ModelWithMetadata, SortableModel
+from ...core.models import CustomQueryset, ModelWithMetadata, SortableModel
 from ...core.utils.translations import TranslationProxy
 from ...page.models import PageType
 from ...product.models import ProductType
@@ -32,7 +33,16 @@ class BaseAssignedAttribute(models.Model):
         return self.assignment.attribute_id
 
 
-class BaseAttributeQuerySet(models.QuerySet):
+class SimpleBaseAttributeQuerySet(models.QuerySet):
+    def get_public_attributes(self):
+        raise NotImplementedError
+
+    def get_visible_to_user(self, requestor: Union["User", "App"]):
+        if requestor_is_staff_member_or_app(requestor):
+            return self.all()
+        return self.get_public_attributes()
+
+class BaseAttributeQuerySet(CustomQueryset):
     def get_public_attributes(self):
         raise NotImplementedError
 
@@ -42,7 +52,7 @@ class BaseAttributeQuerySet(models.QuerySet):
         return self.get_public_attributes()
 
 
-class AssociatedAttributeQuerySet(BaseAttributeQuerySet):
+class AssociatedAttributeQuerySet(SimpleBaseAttributeQuerySet):
     def get_public_attributes(self):
         return self.filter(attribute__visible_in_storefront=True)
 
@@ -99,6 +109,14 @@ class AttributeQuerySet(BaseAttributeQuerySet):
 
 
 class Attribute(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="attributes",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     slug = models.SlugField(max_length=250, unique=True, allow_unicode=True)
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=50, choices=AttributeType.CHOICES)

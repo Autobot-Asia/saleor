@@ -14,6 +14,7 @@ from ..product import ProductMediaTypes
 from ..core.permissions import PostPermissions
 
 class Post(ModelWithMetadata, SeoModel):
+    tenant_id='store_id'
     title = models.CharField(max_length=250)
     content = SanitizedJSONField(blank=True, null=True, sanitizer=clean_editor_js)
 
@@ -28,7 +29,7 @@ class Post(ModelWithMetadata, SeoModel):
     search_vector = SearchVectorField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
-    objects = models.Manager()
+    # objects = models.Manager()
     translated = TranslationProxy()
 
     def __str__(self) -> str:
