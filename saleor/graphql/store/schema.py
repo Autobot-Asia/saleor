@@ -24,7 +24,7 @@ from .resolvers import (
     resolve_stores,
     resolve_store_type,
     resolve_store_types,
-    resolve_user_name
+    resolve_user_store
 )
 
 class StoreQueries(graphene.ObjectType):
@@ -51,9 +51,9 @@ class StoreQueries(graphene.ObjectType):
         StoreType,
         description="List of the shop's categories.",
     )
-    user = graphene.Field(
+    user_store = graphene.Field(
         User,
-        id=graphene.Argument(
+        store_id=graphene.Argument(
             graphene.ID,
             description="ID of the owner.",
         ),
@@ -72,8 +72,8 @@ class StoreQueries(graphene.ObjectType):
     def resolve_store_types(self, info, **kwargs):
         return resolve_store_types(info, **kwargs)
 
-    def resolve_user(self, info, slug=None):
-        return resolve_user_name(info, slug)
+    def resolve_user_store(self, info, store_id=None, slug=None):
+        return resolve_user_store(info, store_id, slug)
 
 class StoreMutations(graphene.ObjectType):
     # store mutations
