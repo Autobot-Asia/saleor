@@ -183,10 +183,10 @@ class User(PermissionsMixin, ModelWithMetadata, AbstractBaseUser):
     def effective_permissions(self) -> "QuerySet[Permission]":
         if self._effective_permissions is None:
             self._effective_permissions = get_permissions()
-            if not self.is_superuser:
-                self._effective_permissions = self._effective_permissions.filter(
-                    Q(user=self) | Q(group__user=self)
-                )
+            # if not self.is_superuser:
+            #     self._effective_permissions = self._effective_permissions.filter(
+            #         Q(user=self) | Q(group__user=self)
+            #     )
         return self._effective_permissions
 
     @effective_permissions.setter
