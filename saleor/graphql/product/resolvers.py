@@ -7,7 +7,7 @@ from ..channel import ChannelQsContext
 from ..utils import get_database_id, get_user_or_app_from_context
 from ..utils.filters import filter_by_period
 from .filters import filter_products_by_stock_availability
-
+from django_multitenant.utils import get_current_tenant
 
 def resolve_category_by_slug(slug):
     return models.Category.objects.filter(slug=slug).first()

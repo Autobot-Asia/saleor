@@ -1,7 +1,7 @@
 from django.db import models
 
 from ..core.db.fields import SanitizedJSONField
-from ..core.models import ModelWithMetadata, PublishableModel, SortableModel
+from ..core.models import ModelWithMetadata, PublishableModelMT, SortableModel
 from ..core.permissions import PagePermissions, PageTypePermissions
 from ..core.utils.editorjs import clean_editor_js
 from ..core.utils.translations import TranslationProxy
@@ -10,7 +10,8 @@ from versatileimagefield.fields import PPOIField, VersatileImageField
 from ..product import ProductMediaTypes
 from ..store.models import Store
 
-class Page(ModelWithMetadata, SeoModel, PublishableModel):
+class Page(SeoModel, PublishableModelMT):
+    tenant_id='store_id'
     slug = models.SlugField(unique=True, max_length=255)
     title = models.CharField(max_length=250)
     page_type = models.ForeignKey(
@@ -63,6 +64,14 @@ class PageTranslation(SeoModelTranslation):
 
 
 class PageType(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="page_types",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     name = models.CharField(max_length=250)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
 

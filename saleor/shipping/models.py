@@ -1,3 +1,4 @@
+from saleor.store.models import Store
 from typing import TYPE_CHECKING, List, Union
 
 from django.conf import settings
@@ -10,7 +11,7 @@ from measurement.measures import Weight
 from prices import Money
 
 from ..channel.models import Channel
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..core.permissions import ShippingPermissions
 from ..core.utils.translations import TranslationProxy
 from ..core.weight import (
@@ -76,6 +77,14 @@ def _get_weight_type_display(min_weight, max_weight):
 
 
 class ShippingZone(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="shipping_zones",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     name = models.CharField(max_length=100)
     countries = CountryField(multiple=True, default=[], blank=True)
     default = models.BooleanField(default=False)
@@ -90,7 +99,7 @@ class ShippingZone(ModelWithMetadata):
         )
 
 
-class ShippingMethodQueryset(models.QuerySet):
+class ShippingMethodQueryset(CustomQueryset):
     def price_based(self):
         return self.filter(type=ShippingMethodType.PRICE_BASED)
 
@@ -173,6 +182,14 @@ class ShippingMethodQueryset(models.QuerySet):
 
 
 class ShippingMethod(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="shipping_methods",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=30, choices=ShippingMethodType.CHOICES)
     shipping_zone = models.ForeignKey(

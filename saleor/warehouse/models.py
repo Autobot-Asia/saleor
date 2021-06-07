@@ -1,4 +1,5 @@
 import itertools
+from saleor.store.models import Store
 import uuid
 from typing import Set
 
@@ -7,13 +8,12 @@ from django.db.models import F, Sum
 from django.db.models.functions import Coalesce
 
 from ..account.models import Address
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..order.models import OrderLine
 from ..product.models import Product, ProductVariant
 from ..shipping.models import ShippingZone
 
-
-class WarehouseQueryset(models.QuerySet):
+class WarehouseQueryset(CustomQueryset):
     def prefetch_data(self):
         return self.select_related("address").prefetch_related("shipping_zones")
 
@@ -26,6 +26,14 @@ class WarehouseQueryset(models.QuerySet):
 
 
 class Warehouse(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="warehouses",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.CharField(max_length=250)
     slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)

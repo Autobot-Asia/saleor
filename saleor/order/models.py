@@ -1,6 +1,7 @@
 from decimal import Decimal
 from operator import attrgetter
 from re import match
+from saleor.store.models import Store
 from typing import Optional
 from uuid import uuid4
 
@@ -17,7 +18,7 @@ from prices import Money, TaxedMoney
 
 from ..account.models import Address
 from ..channel.models import Channel
-from ..core.models import ModelWithMetadata
+from ..core.models import CustomQueryset, ModelWithMetadata
 from ..core.permissions import OrderPermissions
 from ..core.taxes import zero_money, zero_taxed_money
 from ..core.utils.json_serializer import CustomJsonEncoder
@@ -30,7 +31,7 @@ from ..shipping.models import ShippingMethod
 from . import FulfillmentStatus, OrderEvents, OrderStatus
 
 
-class OrderQueryset(models.QuerySet):
+class OrderQueryset(CustomQueryset):
     def get_by_checkout_token(self, token):
         """Return non-draft order with matched checkout token."""
         return self.confirmed().filter(checkout_token=token).first()
@@ -77,6 +78,14 @@ class OrderQueryset(models.QuerySet):
 
 
 class Order(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="orders",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     created = models.DateTimeField(default=now, editable=False)
     status = models.CharField(
         max_length=32, default=OrderStatus.UNFULFILLED, choices=OrderStatus.CHOICES
@@ -376,7 +385,7 @@ class Order(ModelWithMetadata):
         return self.weight
 
 
-class OrderLineQueryset(models.QuerySet):
+class OrderLineQueryset(CustomQueryset):
     def digital(self):
         """Return lines with digital products."""
         for line in self.all():
@@ -519,6 +528,14 @@ class OrderLine(models.Model):
 
 
 class Fulfillment(ModelWithMetadata):
+    store = models.ForeignKey(
+        Store,
+        related_name="fulfillments",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    tenant_id='store_id'
     fulfillment_order = models.PositiveIntegerField(editable=False)
     order = models.ForeignKey(
         Order, related_name="fulfillments", editable=False, on_delete=models.CASCADE

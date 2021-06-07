@@ -8,6 +8,7 @@ from django.db.models import F, Max, Q
 
 from . import JobStatus
 from .utils.json_serializer import CustomJsonEncoder
+from django_multitenant.models import TenantManager, TenantModel
 
 
 class SortableModel(models.Model):
@@ -74,8 +75,50 @@ class PublishableModel(models.Model):
             or self.publication_date <= datetime.date.today()
         )
 
+class SimpleModelWithMetadata(models.Model):
+    private_metadata = JSONField(
+        blank=True, null=True, default=dict, encoder=CustomJsonEncoder
+    )
+    metadata = JSONField(blank=True, null=True, default=dict, encoder=CustomJsonEncoder)
 
-class ModelWithMetadata(models.Model):
+    class Meta:
+        indexes = [
+            GinIndex(fields=["private_metadata"], name="%(class)s_p_meta_idx"),
+            GinIndex(fields=["metadata"], name="%(class)s_meta_idx"),
+        ]
+        abstract = True
+
+    def get_value_from_private_metadata(self, key: str, default: Any = None) -> Any:
+        return self.private_metadata.get(key, default)
+
+    def store_value_in_private_metadata(self, items: dict):
+        if not self.private_metadata:
+            self.private_metadata = {}
+        self.private_metadata.update(items)
+
+    def clear_private_metadata(self):
+        self.private_metadata = {}
+
+    def delete_value_from_private_metadata(self, key: str):
+        if key in self.private_metadata:
+            del self.private_metadata[key]
+
+    def get_value_from_metadata(self, key: str, default: Any = None) -> Any:
+        return self.metadata.get(key, default)
+
+    def store_value_in_metadata(self, items: dict):
+        if not self.metadata:
+            self.metadata = {}
+        self.metadata.update(items)
+
+    def clear_metadata(self):
+        self.metadata = {}
+
+    def delete_value_from_metadata(self, key: str):
+        if key in self.metadata:
+            del self.metadata[key]
+
+class ModelWithMetadata(TenantModel):
     private_metadata = JSONField(
         blank=True, null=True, default=dict, encoder=CustomJsonEncoder
     )
@@ -129,3 +172,45 @@ class Job(models.Model):
 
     class Meta:
         abstract = True
+
+class CustomQueryset(models.QuerySet):
+    def as_manager(cls):
+        manager = TenantManager.from_queryset(cls)()
+        manager._built_with_as_manager = True
+        return manager
+    as_manager.queryset_only = True
+    as_manager = classmethod(as_manager)
+
+class PublishedQuerySetMT(CustomQueryset):
+    def published(self):
+        today = datetime.date.today()
+        return self.filter(
+            Q(publication_date__lte=today) | Q(publication_date__isnull=True),
+            is_published=True,
+        )
+
+    def visible_to_user(self, requestor):
+        from ..account.utils import requestor_is_staff_member_or_app, requestor_is_supplier
+
+        if requestor_is_staff_member_or_app(requestor):
+            return self.all()
+        if requestor_is_supplier(requestor):
+            return self.filter(store_id=requestor.store_id)    
+        return self.published()
+
+
+class PublishableModelMT(ModelWithMetadata):
+    publication_date = models.DateField(blank=True, null=True)
+    is_published = models.BooleanField(default=False)
+
+    objects = PublishedQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+    @property
+    def is_visible(self):
+        return self.is_published and (
+            self.publication_date is None
+            or self.publication_date <= datetime.date.today()
+        )
