@@ -1,10 +1,12 @@
 from collections import defaultdict
 from datetime import date
+from saleor.checkout import AddressType
+from saleor.account.models import Address, User
 
 import graphene
 from django.core.exceptions import ValidationError
 from django.db import transaction
-
+from django.conf import settings
 from ....attribute import AttributeType
 from ....store import models
 from ...attribute.utils import AttributeAssignmentMixin
@@ -18,20 +20,27 @@ from ....core.exceptions import PermissionDenied
 from ....store.utils import delete_stores, delete_stores_types
 from ..types import Store, StoreType
 from ...account.enums import CountryCodeEnum
-
+from ....core.utils.url import validate_storefront_url
 from ....product.thumbnails import (
     create_store_background_image_thumbnails,
 )
-
+from ....account.error_codes import AccountErrorCode
 from ...core.utils import (
     clean_seo_fields,
     from_global_id_strict_type,
     get_duplicated_values,
     validate_image_file,
 )
+from django.contrib.auth import password_validation
+from ....plugins.manager import get_plugins_manager
+from ....account.utils import store_user_address
 
 class StoreInput(graphene.InputObjectType):
     name = graphene.String(description="Store name.")
+    first_name = graphene.String(description="Given name.", required=True)
+    last_name = graphene.String(description="Family name.", required=True)
+    email = graphene.String(description="The email address of the user.", required=True)
+    password = graphene.String(description="Password.", required=True)
     description = graphene.JSONString(description="Store full description (JSON).")
     phone = graphene.String(description="Phone number.")
     acreage = graphene.Float( description="Store acreage")
@@ -81,6 +90,36 @@ class StoreCreate(ModelMutation):
             image_data = info.context.FILES.get(data["background_image"])
             validate_image_file(image_data, "background_image")
         clean_seo_fields(cleaned_input)
+
+        # Validate for create user
+        if not settings.ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL:
+            return cleaned_input
+        elif not data.get("redirect_url"):
+            raise ValidationError(
+                {
+                    "redirect_url": ValidationError(
+                        "This field is required.", code=AccountErrorCode.REQUIRED
+                    )
+                }
+            )
+
+        try:
+            validate_storefront_url(data["redirect_url"])
+        except ValidationError as error:
+            raise ValidationError(
+                {
+                    "redirect_url": ValidationError(
+                        error.message, code=AccountErrorCode.INVALID
+                    )
+                }
+            )
+
+        password = data["password"]
+        try:
+            password_validation.validate_password(password, instance)
+        except ValidationError as error:
+            raise ValidationError({"password": error})
+        
         return cleaned_input
 
     @classmethod
@@ -89,10 +128,26 @@ class StoreCreate(ModelMutation):
         data["input"]["store_type_id"] = store_type_id
         retval = super().perform_mutation(root, info, **data)
         user = info.context.user
-        if not user.is_superuser:
-            user.store_id = retval.store.id
-        if user.is_authenticated:
-            user.save()
+        # if not user.is_superuser:
+        #     user.store_id = retval.store.id
+        # if user.is_authenticated:
+        #     user.save()
+        user = User()
+        user.is_supplier = True
+        user.store_id = retval.store.id
+        user.email = data["input"]["email"]
+        password = data["input"]["password"]
+        user.set_password(password)
+        user.save()
+
+        address = Address(
+            first_name = data["input"]["first_name"],
+            last_name = data["input"]["last_name"],
+        )
+        address.save()
+        manager = get_plugins_manager()
+        store_user_address(user, address, AddressType.BILLING, manager)
+        store_user_address(user, address, AddressType.SHIPPING, manager)
             
         return retval
 
@@ -101,7 +156,6 @@ class StoreCreate(ModelMutation):
         instance.save()
         if cleaned_input.get("background_image"):
             create_store_background_image_thumbnails.delay(instance.pk)
-
 
 class StoreUpdate(StoreCreate):
     class Arguments:
