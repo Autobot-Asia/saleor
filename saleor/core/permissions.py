@@ -101,6 +101,20 @@ PERMISSIONS_ENUMS = [
     SocialPermissions,
 ]
 
+PERMISSIONS_ENUMS_INIT = [
+    ChannelPermissions,
+    DiscountPermissions,
+    GiftcardPermissions,
+    MenuPermissions,
+    OrderPermissions,
+    ProductPermissions,
+    ProductTypePermissions,
+    ShippingPermissions,
+    CheckoutPermissions,
+    PostPermissions,
+    SocialPermissions
+]
+
 
 def split_permission_codename(permissions):
     return [permission.split(".")[1] for permission in permissions]
@@ -110,6 +124,14 @@ def get_permissions_codename():
     permissions_values = [
         enum.codename
         for permission_enum in PERMISSIONS_ENUMS
+        for enum in permission_enum
+    ]
+    return permissions_values
+
+def get_permissions_codename_default():
+    permissions_values = [
+        enum.codename
+        for permission_enum in PERMISSIONS_ENUMS_INIT
         for enum in permission_enum
     ]
     return permissions_values
@@ -154,6 +176,10 @@ def get_permissions(permissions=None):
         codenames = get_permissions_codename()
     else:
         codenames = split_permission_codename(permissions)
+    return get_permissions_from_codenames(codenames)
+
+def get_permissions_default():
+    codenames = get_permissions_codename_default()
     return get_permissions_from_codenames(codenames)
 
 

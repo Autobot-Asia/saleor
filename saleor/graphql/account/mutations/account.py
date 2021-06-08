@@ -27,7 +27,8 @@ from .base import (
 from ..enums import CountryCodeEnum
 from ....account.utils import store_user_address
 from ....plugins.manager import get_plugins_manager
-
+from ....core.permissions import get_permissions_default
+from django.contrib.auth.models import Group
 class AccountRegisterInput(graphene.InputObjectType):
     email = graphene.String(description="The email address of the user.", required=True)
     password = graphene.String(description="Password.", required=True)
@@ -106,6 +107,12 @@ class AccountRegister(ModelMutation):
             raise ValidationError({"password": error})
 
         return super().clean_input(info, instance, data, input_cls=None)
+    
+    def create_group_data(name, permissions, users):
+        group, _ = Group.objects.get_or_create(name=name)
+        group.permissions.add(*permissions)
+        group.user_set.add(*users)
+        return group
 
     @classmethod
     def save(cls, info, user, cleaned_input):
@@ -115,14 +122,16 @@ class AccountRegister(ModelMutation):
             store = models.Store(
                 name=cleaned_input["store_name"],
                 acreage=0,
-                phone=cleaned_input["phone"]
+                phone=cleaned_input["phone"],
+                country=cleaned_input["country"]
             )
+            if "country_area" in cleaned_input:
+                store.country_area = cleaned_input["country_area"]
             store.save()
             user.store = store
         if settings.ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL:
             user.is_active = False
             emails.send_account_confirmation_email(user, cleaned_input["redirect_url"])
-
         user.is_supplier = cleaned_input["is_supplier"]
         user.save()
         address = models.Address(
@@ -137,6 +146,13 @@ class AccountRegister(ModelMutation):
         account_events.customer_account_created_event(user=user)
         info.context.plugins.customer_created(customer=user)
 
+        permissions = get_permissions_default()
+        for permission in permissions:
+            base_name = permission.codename.split("_")[1:]
+            group_name = " ".join(base_name)
+            group_name += " management"
+            group_name = group_name.capitalize()
+            cls.create_group_data(group_name, [permission], [user])
 
 class AccountInput(graphene.InputObjectType):
     first_name = graphene.String(description="Given name.")

@@ -24,6 +24,10 @@ class Post(CountableDjangoObjectType):
         graphene.NonNull(lambda: PostMedia),
         description="List of media for the post.",
     )
+    updated_at = graphene.String(
+        description="The post content.",
+        required=True,
+    )
 
     class Meta:
         description = (
