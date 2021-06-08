@@ -1,5 +1,7 @@
 from collections import defaultdict
 from datetime import date
+
+from pkg_resources import require
 from saleor.checkout import AddressType
 from saleor.account.models import Address, User
 
@@ -36,7 +38,7 @@ from ....plugins.manager import get_plugins_manager
 from ....account.utils import store_user_address
 
 class StoreInput(graphene.InputObjectType):
-    name = graphene.String(description="Store name.")
+    name = graphene.String(description="Store name.", required=True)
     first_name = graphene.String(description="Given name.", required=True)
     last_name = graphene.String(description="Family name.", required=True)
     email = graphene.String(description="The email address of the user.", required=True)
@@ -56,7 +58,6 @@ class StoreInput(graphene.InputObjectType):
     postal_code = graphene.String(description="Postal code.")
     country = CountryCodeEnum(description="Country.")
     country_area = graphene.String(description="State or province.")
-    phone = graphene.String(description="Phone number.", required=True)
 
 class StoreCreateInput(StoreInput):
     store_type = graphene.ID(
@@ -127,7 +128,7 @@ class StoreCreate(ModelMutation):
         store_type_id = data.pop("store_type_id", None)
         data["input"]["store_type_id"] = store_type_id
         retval = super().perform_mutation(root, info, **data)
-        user = info.context.user
+        # user = info.context.user
         # if not user.is_superuser:
         #     user.store_id = retval.store.id
         # if user.is_authenticated:
@@ -136,6 +137,8 @@ class StoreCreate(ModelMutation):
         user.is_supplier = True
         user.store_id = retval.store.id
         user.email = data["input"]["email"]
+        user.first_name = data["input"]["first_name"]
+        user.last_name = data["input"]["last_name"]
         password = data["input"]["password"]
         user.set_password(password)
         user.save()
@@ -157,10 +160,35 @@ class StoreCreate(ModelMutation):
         if cleaned_input.get("background_image"):
             create_store_background_image_thumbnails.delay(instance.pk)
 
-class StoreUpdate(StoreCreate):
+class StoreUpdateInput(graphene.InputObjectType):
+    store_type = graphene.ID(
+        description="ID of the store type that store belongs to.", required=True
+    )
+    name = graphene.String(description="Store name.", required=True)
+    user_id = graphene.ID(
+        description="ID of the store type that store belongs to."
+    )
+    first_name = graphene.String(description="Given name.")
+    last_name = graphene.String(description="Family name.")
+    description = graphene.JSONString(description="Store full description (JSON).")
+    phone = graphene.String(description="Phone number.")
+    acreage = graphene.Float( description="Store acreage")
+    latlong = graphene.String( description="latlong has format lat,long")
+    seo = SeoInput(description="Search engine optimization fields.")
+    background_image = Upload(description="Background image file.")
+    background_image_alt = graphene.String(description="Alt text for a stores media.")
+    company_name = graphene.String(description="Company or organization.")
+    street_address_1 = graphene.String(description="Address.")
+    street_address_2 = graphene.String(description="Address.")
+    city = graphene.String(description="City.")
+    city_area = graphene.String(description="District.")
+    postal_code = graphene.String(description="Postal code.")
+    country = CountryCodeEnum(description="Country.")
+    country_area = graphene.String(description="State or province.")
+class StoreUpdate(ModelMutation):
     class Arguments:
         id = graphene.ID(required=True, description="ID of a store to update.")
-        input = StoreCreateInput(
+        input = StoreUpdateInput(
             required=True, description="Fields required to update a store."
         )
 
@@ -170,6 +198,41 @@ class StoreUpdate(StoreCreate):
         permissions = (StorePermissions.MANAGE_STORES,)
         error_type_class = StoreError
         error_type_field = "store_errors"
+
+    @classmethod
+    def clean_input(cls, info, instance, data):
+        cleaned_input = super().clean_input(info, instance, data)        
+        store_type_id = data["store_type_id"]
+        if store_type_id:
+            store_type = cls.get_node_or_error(
+                info, store_type_id, field="store_type", only_type=StoreType
+            )
+            cleaned_input["store_type"] = store_type
+        if data.get("background_image"):
+            image_data = info.context.FILES.get(data["background_image"])
+            validate_image_file(image_data, "background_image")
+        clean_seo_fields(cleaned_input)
+        return cleaned_input
+    
+    @classmethod
+    def perform_mutation(cls, root, info, **data):
+        store_type_id = data.pop("store_type_id", None)
+        data["input"]["store_type_id"] = store_type_id
+        retval = super().perform_mutation(root, info, **data)
+
+        if("user_id" in data["input"] and "first_name" in data["input"] and "last_name" in data["input"]):
+            pk = from_global_id_strict_type(data["input"]["user_id"], only_type="User")
+            user = User.objects.get(pk=pk)
+            user.first_name = data["input"]["first_name"]
+            user.last_name = data["input"]["last_name"]
+            user.save()
+        return retval
+
+    @classmethod
+    def save(cls, info, instance, cleaned_input):
+        instance.save()
+        if cleaned_input.get("background_image"):
+            create_store_background_image_thumbnails.delay(instance.pk)
 
 
 class StoreDelete(ModelDeleteMutation):
