@@ -36,6 +36,8 @@ from ...core.utils import (
 from django.contrib.auth import password_validation
 from ....plugins.manager import get_plugins_manager
 from ....account.utils import store_user_address
+from ....core.permissions import get_permissions_default
+from django.contrib.auth.models import Group
 
 class StoreInput(graphene.InputObjectType):
     name = graphene.String(description="Store name.", required=True)
@@ -123,6 +125,12 @@ class StoreCreate(ModelMutation):
         
         return cleaned_input
 
+    def create_group_data(name, permissions, users):
+        group, _ = Group.objects.get_or_create(name=name)
+        group.permissions.add(*permissions)
+        group.user_set.add(*users)
+        return group
+
     @classmethod
     def perform_mutation(cls, root, info, **data):
         store_type_id = data.pop("store_type_id", None)
@@ -142,6 +150,14 @@ class StoreCreate(ModelMutation):
         password = data["input"]["password"]
         user.set_password(password)
         user.save()
+
+        permissions = get_permissions_default()
+        for permission in permissions:
+            base_name = permission.codename.split("_")[1:]
+            group_name = " ".join(base_name)
+            group_name += " management"
+            group_name = group_name.capitalize()
+            cls.create_group_data(group_name, [permission], [user])
 
         address = Address(
             first_name = data["input"]["first_name"],
