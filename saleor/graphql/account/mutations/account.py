@@ -125,12 +125,13 @@ class AccountRegister(ModelMutation):
                 phone=cleaned_input["phone"],
                 country=cleaned_input["country"]
             )
+            if "country_area" in cleaned_input:
+                store.country_area = cleaned_input["country_area"]
             store.save()
             user.store = store
         if settings.ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL:
             user.is_active = False
             emails.send_account_confirmation_email(user, cleaned_input["redirect_url"])
-
         user.is_supplier = cleaned_input["is_supplier"]
         user.save()
         address = models.Address(
