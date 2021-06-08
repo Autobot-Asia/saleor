@@ -122,7 +122,8 @@ class AccountRegister(ModelMutation):
             store = models.Store(
                 name=cleaned_input["store_name"],
                 acreage=0,
-                phone=cleaned_input["phone"]
+                phone=cleaned_input["phone"],
+                country=cleaned_input["country"]
             )
             store.save()
             user.store = store
