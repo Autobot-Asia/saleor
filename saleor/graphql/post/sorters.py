@@ -4,8 +4,9 @@ from ..core.types import SortInputObjectType
 
 
 class PostSortField(graphene.Enum):
-    NAME = ["name", "pk"]
-    DESCRIPTION = ["description", "pk"]
+    # NAME = ["name", "pk"]
+    # DESCRIPTION = ["description", "pk"]
+    UPDATEDAT = ["updated_at", "pk"]
     
     @property
     def description(self):

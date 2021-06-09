@@ -19,10 +19,14 @@ from .mutations.posts import (
     PostMediaUpdate,
     PostMediaReorder,
 )
+from .mutations.bulk_mutations import (
+    PostMediaBulkDelete
+)
 from .resolvers import (
     resolve_post,
     resolve_posts,
     resolve_posts_by_follows,
+    resolve_posts_by_store,
 )
 
 class PostQueries(graphene.ObjectType):
@@ -49,6 +53,17 @@ class PostQueries(graphene.ObjectType):
         description="List of the post.",
     )
 
+    posts_by_store = FilterInputConnectionField(
+        Post,
+        store_id=graphene.Argument(
+            graphene.ID,
+            description="ID of the post.",
+        ),
+        filter=PostFilterInput(description="Filtering options for post."),
+        sort_by=PostSortingInput(description="Sort post."),
+        description="List of the post.",
+    )
+
     store = graphene.Field(
         Store,
         id=graphene.Argument(graphene.ID, description="ID of the store type."),
@@ -63,6 +78,9 @@ class PostQueries(graphene.ObjectType):
 
     def resolve_posts_by_follows(self, info, **kwargs):
         return resolve_posts_by_follows(info, **kwargs)
+    
+    def resolve_posts_by_store(self, info, **kwargs):
+        return resolve_posts_by_store(info, **kwargs)
 
 
 
@@ -76,3 +94,4 @@ class PostMutations(graphene.ObjectType):
     post_media_create = PostMediaCreate.Field()
     post_media_update = PostMediaUpdate.Field()
     post_media_reorder = PostMediaReorder.Field()
+    post_media_bulk_delete = PostMediaBulkDelete.Field()

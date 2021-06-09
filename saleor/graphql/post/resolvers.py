@@ -31,3 +31,13 @@ def resolve_posts_by_follows(info, **_kwargs):
         posts = models.Post.objects.all()
 
     return posts
+
+def resolve_posts_by_store(info, store_id=None, **_kwargs):
+    _type, store_pk = graphene.Node.from_global_id(store_id)
+    posts = []
+    if store_pk:
+        posts = models.Post.objects.filter(store_id=store_pk)
+    else:
+        posts = models.Post.objects.all()
+
+    return posts
