@@ -25,7 +25,6 @@ class SocialCreate(ModelMutation):
     class Meta:
         description = "Follow/unfollow a store."
         model = models.Social
-        permissions = (SocialPermissions.MANAGE_SOCIALS,)
         error_type_class = SocialError
         error_type_field = "social_errors"
 
@@ -42,7 +41,7 @@ class SocialCreate(ModelMutation):
 
         _type, store = graphene.Node.from_global_id(data.store)
         instance = models.Social.objects.filter(user=user, store_id=store).first()
-        if instance.exists():
+        if instance:
             instance.follow = data.follow
         else:
             instance = cls.get_instance(info, **data)

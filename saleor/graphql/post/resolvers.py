@@ -1,6 +1,7 @@
 import graphene
 
 from ...post import models
+from ...social import models as social_models
 from ..core.validators import validate_one_of_args_is_in_query
 from .types import Post
 
@@ -15,3 +16,18 @@ def resolve_post(info, global_page_id=None, slug=None):
 
 def resolve_posts(info, **_kwargs):
     return models.Post.objects.all()
+
+def resolve_posts_by_follows(info, **_kwargs):
+    user = info.context.user
+    posts = []
+    if user and hasattr(user, 'id') and user.id:
+        user_id = user.id
+        stores = social_models.Social.objects.filter(user_id=user_id).values('store_id')
+        store_ids = []
+        for store in stores:
+            store_ids.append(store['store_id'])
+        posts = models.Post.objects.filter(store_id__in=store_ids)
+    else:
+        posts = models.Post.objects.all()
+
+    return posts
