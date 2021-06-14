@@ -77,7 +77,9 @@ class Store(ModelWithMetadata, SeoModel):
     tenant_id = 'id'
     name = models.CharField(max_length=250)
     description = SanitizedJSONField(blank=True, null=True, sanitizer=clean_editor_js)
-
+    logo = VersatileImageField(
+        upload_to="store-backgrounds", blank=True, null=True
+    )
     store_type = models.ForeignKey(
         StoreType,
         related_name="stores",
@@ -99,7 +101,6 @@ class Store(ModelWithMetadata, SeoModel):
     background_image = VersatileImageField(
         upload_to="store-backgrounds", blank=True, null=True
     )
-    background_image_alt = models.CharField(max_length=128, blank=True, null=True)
     date_joined = models.DateTimeField(default=timezone.now, editable=False)
 
     objects = StoresQueryset.as_manager()
