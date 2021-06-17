@@ -18,6 +18,7 @@ from .mutations.stores import (
     StoreTypeCreate,
     StoreTypeDelete,
     StoreTypeUpdate,
+    StoreMediaUpdate
 )
 from .resolvers import (
     resolve_store,
@@ -80,6 +81,7 @@ class StoreMutations(graphene.ObjectType):
     store_create = StoreCreate.Field()
     store_delete = StoreDelete.Field()
     store_update = StoreUpdate.Field()
+    store_media_update = StoreMediaUpdate.Field()
 
     # store type mutations
     store_type_create = StoreTypeCreate.Field()

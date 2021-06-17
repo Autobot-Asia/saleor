@@ -50,9 +50,8 @@ class Store(CountableDjangoObjectType):
         id=graphene.Argument(graphene.ID, description="ID of the store type."),
         description="Look up a store type by ID",
     )
-    background_image = graphene.Field(
-        Image, size=graphene.Int(description="Size of the image.")
-    )
+    logo = graphene.Field(Image, size=graphene.Int(description="Size of the avatar."))
+    background_image = graphene.Field(Image, size=graphene.Int(description="Size of the avatar."))
     user_name = graphene.String(
         description="Owner of store",
     )
@@ -83,3 +82,25 @@ class Store(CountableDjangoObjectType):
         ]
         interfaces = [graphene.relay.Node, ObjectWithMetadata]
         model = models.Store
+    
+    @staticmethod
+    def resolve_logo(root: models.Store, info, size=None, **_kwargs):
+        if root.logo:
+            return Image.get_adjusted(
+                image=root.logo,
+                alt=None,
+                size=size,
+                rendition_key_set="store_logo",
+                info=info,
+            )
+    
+    @staticmethod
+    def resolve_background_image(root: models.Store, info, size=None, **_kwargs):
+        if root.background_image:
+            return Image.get_adjusted(
+                image=root.logo,
+                alt=None,
+                size=size,
+                rendition_key_set="store_background_image",
+                info=info,
+            )

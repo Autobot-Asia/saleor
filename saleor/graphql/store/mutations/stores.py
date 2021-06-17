@@ -347,3 +347,22 @@ class StoreTypeDelete(ModelDeleteMutation):
         delete_stores_types([db_id])
         instance.id = db_id
         return cls.success_response(instance)
+
+class StoreMediaInput(graphene.InputObjectType):
+    logo = Upload(description="Background image file.")
+    logo_alt = graphene.String(description="Alt text for a stores media.")
+    background_image = Upload(description="Background image file.")
+    background_image_alt = graphene.String(description="Alt text for a stores media.")
+
+class StoreMediaUpdate(ModelMutation):
+    class Arguments:
+        id = graphene.ID(required=True, description="ID of a store to update.")
+        input = StoreMediaInput(
+            required=True, description="Fields required to update a store type."
+        )
+
+    class Meta:
+        description = "Updates a store type."
+        model = models.Store
+        error_type_class = StoreError
+        error_type_field = "store_errors"
