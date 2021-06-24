@@ -102,17 +102,24 @@ PERMISSIONS_ENUMS = [
 ]
 
 PERMISSIONS_ENUMS_INIT = [
+    AccountPermissions,
+    AppPermission,
     ChannelPermissions,
     DiscountPermissions,
+    PluginsPermissions,
     GiftcardPermissions,
     MenuPermissions,
     OrderPermissions,
+    PagePermissions,
+    PageTypePermissions,
     ProductPermissions,
     ProductTypePermissions,
     ShippingPermissions,
+    SitePermissions,
     CheckoutPermissions,
+    StorePermissions,
     PostPermissions,
-    SocialPermissions
+    SocialPermissions,
 ]
 
 

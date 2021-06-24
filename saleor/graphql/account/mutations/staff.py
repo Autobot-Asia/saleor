@@ -532,7 +532,7 @@ class UserAvatarUpdate(BaseMutation):
         error_type_field = "account_errors"
 
     @classmethod
-    @staff_member_required
+    # @staff_member_required
     def perform_mutation(cls, _root, info, image):
         user = info.context.user
         image_data = info.context.FILES.get(image)
