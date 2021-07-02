@@ -30,7 +30,8 @@ class JWTMiddleware:
             return get_user(request) or AnonymousUser()
 
         request.user = SimpleLazyObject(lambda: user())
-        if hasattr(request, 'user') and hasattr(request.user, 'store_id') and request.user.store_id:
+        is_strore_front = request.META.get('HTTP_STORE')
+        if not is_strore_front and hasattr(request, 'user') and hasattr(request.user, 'store_id') and request.user.store_id:
             s_store = Store.objects.get(pk=request.user.store_id)
             set_current_tenant(s_store)
         else:
