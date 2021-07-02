@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.conf import settings
 from ....attribute import AttributeType
-from ....store import models
+from ....store import models, error_codes
 from ...attribute.utils import AttributeAssignmentMixin
 from ...core.mutations import ModelDeleteMutation, ModelMutation
 from ...core.types.common import StoreError
@@ -93,6 +93,16 @@ class StoreCreate(ModelMutation):
             image_data = info.context.FILES.get(data["background_image"])
             validate_image_file(image_data, "background_image")
         clean_seo_fields(cleaned_input)
+
+        # Validate store name
+        store_name = cleaned_input["name"]
+        find_store = models.Store.objects.filter(name=store_name)
+        if find_store:
+            raise ValidationError({
+                "name": ValidationError(
+                    "Store Name already exists", code=error_codes.StoreErrorCode.ALREADY_EXISTS
+                )
+            })
 
         # Validate for create user
         if not settings.ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL:
