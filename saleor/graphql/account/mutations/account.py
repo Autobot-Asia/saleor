@@ -81,7 +81,7 @@ class AccountRegister(ModelMutation):
     def clean_input(cls, info, instance, data, input_cls=None):
         cleaned_input = super().clean_input(info, instance, data, input_cls=None)
         store_name = cleaned_input["name"]
-        find_store = store_models.Store.objects.filter(name=store_name)
+        find_store = store_models.Store.objects.filter(name=store_name).first()
         if find_store:
             raise ValidationError({
                 "name": ValidationError(
