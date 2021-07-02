@@ -96,7 +96,7 @@ class StoreCreate(ModelMutation):
 
         # Validate store name
         store_name = cleaned_input["name"]
-        find_store = models.Store.objects.filter(name=store_name)
+        find_store = models.Store.objects.filter(name=store_name).first()
         if find_store:
             raise ValidationError({
                 "name": ValidationError(
