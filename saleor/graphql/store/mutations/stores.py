@@ -227,7 +227,18 @@ class StoreUpdate(ModelMutation):
 
     @classmethod
     def clean_input(cls, info, instance, data):
-        cleaned_input = super().clean_input(info, instance, data)        
+        cleaned_input = super().clean_input(info, instance, data)
+
+        # Validate store name
+        store_name = cleaned_input["name"]
+        find_store = models.Store.objects.filter(name=store_name).first()
+        if find_store:
+            raise ValidationError({
+                "name": ValidationError(
+                    "Store Name already exists", code=error_codes.StoreErrorCode.ALREADY_EXISTS
+                )
+            })
+
         store_type_id = data["store_type_id"]
         if store_type_id:
             store_type = cls.get_node_or_error(
