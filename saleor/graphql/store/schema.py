@@ -5,7 +5,7 @@ from ..channel.types import ChannelContext
 from ..core.fields import PrefetchingConnectionField
 from ..decorators import permission_required
 
-from .types import Store
+from .types import Store, StoreType
 from ..account.types import User
 from ..core.fields import FilterInputConnectionField
 from ..core.types import FilterInputObjectType
@@ -42,6 +42,15 @@ class StoreQueries(graphene.ObjectType):
         filter=StoreFilterInput(description="Filtering options for store."),
         sort_by=StoreSortingInput(description="Sort store."),
         description="List of the store.",
+    )
+    store_type = graphene.Field(
+        StoreType,
+        id=graphene.Argument(graphene.ID, description="ID of the store type."),
+        description="Look up a store type by ID or slug.",
+    )
+    store_types = FilterInputConnectionField(
+        StoreType,
+        description="List of the shop's categories.",
     )
     user_store = graphene.Field(
         User,
