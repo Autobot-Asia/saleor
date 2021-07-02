@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from ....account import emails
 from ....account import events as account_events
 from ....account import models, utils
+from ....store import models as store_models, error_codes as store_error_codes
 from ....account.error_codes import AccountErrorCode
 from ....checkout import AddressType
 from ....core.jwt import create_token, jwt_decode
@@ -78,8 +79,18 @@ class AccountRegister(ModelMutation):
 
     @classmethod
     def clean_input(cls, info, instance, data, input_cls=None):
+        cleaned_input = super().clean_input(info, instance, data, input_cls=None)
+        store_name = cleaned_input["name"]
+        find_store = store_models.Store.objects.filter(name=store_name)
+        if find_store:
+            raise ValidationError({
+                "name": ValidationError(
+                    "Store Name already exists", code=store_error_codes.StoreErrorCode.ALREADY_EXISTS
+                )
+            })
+
         if not settings.ENABLE_ACCOUNT_CONFIRMATION_BY_EMAIL:
-            return super().clean_input(info, instance, data, input_cls=None)
+            return cleaned_input
         elif not data.get("redirect_url"):
             raise ValidationError(
                 {
@@ -106,7 +117,7 @@ class AccountRegister(ModelMutation):
         except ValidationError as error:
             raise ValidationError({"password": error})
 
-        return super().clean_input(info, instance, data, input_cls=None)
+        return cleaned_input
     
     def create_group_data(name, permissions, users):
         group, _ = Group.objects.get_or_create(name=name)
